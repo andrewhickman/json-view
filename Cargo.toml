@@ -1,0 +1,16 @@
+[package]
+name = "json-view"
+description = "json-view."
+version = "0.0.0"
+authors = ["Andrew Hickman <andrew.hickman1@sky.com>"]
+repository = "https://github.com/andrewhickman/json-view"
+documentation = "https://docs.rs/json-view"
+license = "MIT/Apache-2.0"
+readme = "README.md"
+edition = "2018"
+
+[[bin]]
+path = "src/main.rs"
+name = "jv"
+
+[dependencies]
