@@ -1,7 +1,6 @@
-use std::fmt::Write;
-use std::fmt;
+use std::io::{self, prelude::*};
 
-use console::{Color, style};
+use console::{style, Color};
 use log::{Log, SetLoggerError};
 use structopt::StructOpt;
 
@@ -12,12 +11,6 @@ pub fn init(opts: &Opts) -> Result<(), SetLoggerError> {
 
 #[derive(Debug)]
 struct Logger;
-
-#[derive(Debug)]
-struct Message<'a> {
-    lvl: log::Level, 
-    args: fmt::Arguments<'a>,
-}
 
 #[derive(Debug)]
 struct Padded<W> {
@@ -52,9 +45,15 @@ impl Log for Logger {
 
     fn log(&self, record: &log::Record) {
         if self.enabled(&record.metadata()) {
-            eprint!("{}", Message {
-                lvl: record.level(), 
-                args: *record.args(),
+            Padded {
+                writer: io::stderr().lock(),
+                lvl: Some(record.level()),
+            }
+            .write_fmt(*record.args())
+            .unwrap_or_else(|err| {
+                if err.kind() != io::ErrorKind::BrokenPipe {
+                    panic!("error writing to stderr: {}", err);
+                }
             });
         }
     }
@@ -62,18 +61,9 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
-impl fmt::Display for Message<'_> {
-    fn fmt(&self, writer: &mut fmt::Formatter) -> fmt::Result {
-        fmt::write(&mut Padded {
-            writer,
-            lvl: Some(self.lvl)
-        }, self.args)
-    }
-}
-
-impl<W: Write> fmt::Write for Padded<W> {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        for line in s.lines() {
+impl<W: Write> Write for Padded<W> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        for line in io::Cursor::new(buf).lines() {
             if let Some(lvl) = self.lvl.take() {
                 let color = match lvl {
                     log::Level::Trace => Color::White,
@@ -83,11 +73,15 @@ impl<W: Write> fmt::Write for Padded<W> {
                     log::Level::Error => Color::Red,
                 };
 
-                writeln!(self.writer, "{:>8}: {}", style(lvl).fg(color), line)?;
+                writeln!(self.writer, "{:>8}: {}", style(lvl).fg(color), line?)?;
             } else {
-                writeln!(self.writer, "{:>8}  {}", "", line)?;
+                writeln!(self.writer, "{:>8}  {}", "", line?)?;
             }
         }
-        Ok(())
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.writer.flush()
     }
 }
