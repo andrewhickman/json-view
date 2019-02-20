@@ -2,7 +2,7 @@ use std::io::{self, prelude::*};
 
 use log::{Log, SetLoggerError};
 use structopt::StructOpt;
-use termcolor::{StandardStream, Color, ColorChoice, ColorSpec, WriteColor};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 pub fn init(opts: Opts) -> Result<(), SetLoggerError> {
     log::set_max_level(opts.level_filter());
@@ -79,11 +79,11 @@ impl Log for Logger {
     fn log(&self, record: &log::Record) {
         if self.enabled(&record.metadata()) {
             self.write(record.level(), &record.args().to_string())
-            .unwrap_or_else(|err| {
-                if err.kind() != io::ErrorKind::BrokenPipe {
-                    panic!("error writing to stderr: {}", err);
-                }
-            });
+                .unwrap_or_else(|err| {
+                    if err.kind() != io::ErrorKind::BrokenPipe {
+                        panic!("error writing to stderr: {}", err);
+                    }
+                });
         }
     }
 
