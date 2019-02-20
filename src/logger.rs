@@ -13,12 +13,6 @@ struct Logger {
     writer: StandardStream,
 }
 
-#[derive(Debug)]
-struct Padded<W> {
-    writer: W,
-    lvl: Option<log::Level>,
-}
-
 #[derive(Copy, Clone, Debug, StructOpt)]
 pub struct Opts {
     #[structopt(long = "debug", help = "Enables debug logging", global = true)]
@@ -51,6 +45,30 @@ impl Logger {
             writer: StandardStream::stderr(color_choice),
         }
     }
+
+    fn write(&self, lvl: log::Level, msg: impl AsRef<str>) -> io::Result<()> {
+        const PAD: usize = 8;
+
+        let color = match lvl {
+            log::Level::Trace => Color::White,
+            log::Level::Debug => Color::Cyan,
+            log::Level::Info => Color::Magenta,
+            log::Level::Warn => Color::Yellow,
+            log::Level::Error => Color::Red,
+        };
+
+        let mut writer = self.writer.lock();
+
+        writer.set_color(ColorSpec::new().set_fg(Some(color)))?;
+        write!(writer, "{:>pad$}: ", lvl, pad = PAD)?;
+        writer.reset()?;
+
+        for line in msg.as_ref().lines() {
+            write!(writer, "{}\n{:>pad$}", line, "", pad = PAD + 2)?;
+        }
+
+        Ok(())
+    }
 }
 
 impl Log for Logger {
@@ -60,11 +78,7 @@ impl Log for Logger {
 
     fn log(&self, record: &log::Record) {
         if self.enabled(&record.metadata()) {
-            Padded {
-                writer: &mut self.writer.lock(),
-                lvl: Some(record.level()),
-            }
-            .write_fmt(*record.args())
+            self.write(record.level(), &record.args().to_string())
             .unwrap_or_else(|err| {
                 if err.kind() != io::ErrorKind::BrokenPipe {
                     panic!("error writing to stderr: {}", err);
@@ -74,37 +88,4 @@ impl Log for Logger {
     }
 
     fn flush(&self) {}
-}
-
-impl<W: WriteColor> Write for Padded<W> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        const PAD: usize = 8;
-
-        for line in io::Cursor::new(buf).lines() {
-            let line = line?;
-
-            if let Some(lvl) = self.lvl.take() {
-                let color = match lvl {
-                    log::Level::Trace => Color::White,
-                    log::Level::Debug => Color::Cyan,
-                    log::Level::Info => Color::Magenta,
-                    log::Level::Warn => Color::Yellow,
-                    log::Level::Error => Color::Red,
-                };
-
-                self.writer.set_color(ColorSpec::new().set_fg(Some(color)))?;
-                write!(self.writer, "{:>pad$}: ", lvl, pad = PAD)?;
-                self.writer.reset()?;
-            } else {
-                write!(self.writer, "{:>pad$}  ", "", pad = PAD)?;
-            }
-
-            writeln!(self.writer, "{}", line)?;
-        }
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        self.writer.flush()
-    }
 }
