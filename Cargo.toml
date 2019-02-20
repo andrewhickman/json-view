@@ -19,6 +19,9 @@ serde_json = "1.0.38"
 termcolor = "1.0.4"
 atty = "0.2.11"
 failure = "0.1.5"
+dirs = "1.0.4"
+winapi-util = "0.1.2"
+same-file = "1.0.4"
 
 [dependencies.log]
 version = "0.4.6"

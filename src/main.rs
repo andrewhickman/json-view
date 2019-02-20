@@ -17,7 +17,7 @@ pub struct Opts {
 fn main() {
     let opts = Opts::from_args();
     logger::init(opts.logger).unwrap();
-    log::trace!("Options: {:#?}", opts);
+    log::trace!("Options: {:#?}.", opts);
 
     if let Err(err) = run(&opts) {
         log::error!("{}", fmt_error(&err));

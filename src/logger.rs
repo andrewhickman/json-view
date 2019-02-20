@@ -58,13 +58,16 @@ impl Logger {
         };
 
         let mut writer = self.writer.lock();
+        let mut lines = msg.as_ref().lines();
 
-        writer.set_color(ColorSpec::new().set_fg(Some(color)))?;
-        write!(writer, "{:>pad$}: ", lvl, pad = PAD)?;
-        writer.reset()?;
-
-        for line in msg.as_ref().lines() {
-            write!(writer, "{}\n{:>pad$}", line, "", pad = PAD + 2)?;
+        if let Some(first) = lines.next() {
+            writer.set_color(ColorSpec::new().set_fg(Some(color)))?;
+            write!(writer, "{:>pad$}: ", lvl, pad = PAD)?;
+            writer.reset()?;
+            writeln!(writer, "{}", first)?;
+        }
+        for line in lines {
+            writeln!(writer, "{:>pad$}  {}", line, "", pad = PAD)?;
         }
 
         Ok(())
