@@ -8,6 +8,7 @@ use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub struct Opts {
+    /// A path to the input file, or '-' to read from stdin
     #[structopt(
         name = "INPUT",
         help = "Input file, or '-' to read from stdin",
@@ -21,16 +22,18 @@ pub struct Opts {
 
 #[derive(Debug, StructOpt)]
 pub struct DataOpts {
+    /// The name of a file in the application's data directory to use as input.
     #[structopt(
         name = "DATA",
         long = "data",
         short = "d",
-        help = "Data file to read from",
+        help = "Data file to use",
         global = true,
         parse(from_os_str)
     )]
     file: Option<PathBuf>,
-    #[structopt(long, env = "JSON_VIEW_DATA_DIR", global = true, parse(from_os_str))]
+    /// The path the application should use for data.
+    #[structopt(name = "DIR", long = "data-dir", global = true, parse(from_os_str))]
     dir: Option<PathBuf>,
 }
 

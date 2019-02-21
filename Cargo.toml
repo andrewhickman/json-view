@@ -15,13 +15,18 @@ name = "jv"
 
 [dependencies]
 structopt = "0.2.14"
-serde_json = "1.0.38"
 termcolor = "1.0.4"
 failure = "0.1.5"
 dirs = "1.0.4"
 winapi-util = "0.1.2"
 same-file = "1.0.4"
 grep-cli = "0.1.1"
+serde = "1.0.88"
+serde-transcode = "1.1.0"
+
+[dependencies.json]
+version = "1.0.38"
+package = "serde_json"
 
 [dependencies.log]
 version = "0.4.6"

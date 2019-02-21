@@ -1,3 +1,4 @@
+mod ser;
 mod input;
 mod logger;
 
@@ -5,10 +6,15 @@ use std::io;
 
 use failure::{Error, Fallible, ResultExt};
 use grep_cli::{is_tty_stdout, StandardStream};
+use structopt::clap::AppSettings;
 use structopt::StructOpt;
 use termcolor::ColorChoice;
 
+/// json-view is a utility for viewing json files in the terminal.
 #[derive(Debug, StructOpt)]
+#[structopt(
+    raw(global_settings = "&[AppSettings::UnifiedHelpMessage]")
+)]
 pub struct Opts {
     #[structopt(flatten)]
     input: input::Opts,
