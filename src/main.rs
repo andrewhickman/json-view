@@ -4,7 +4,9 @@ mod logger;
 use std::io;
 
 use failure::{Error, Fallible, ResultExt};
+use grep_cli::{is_tty_stdout, StandardStream};
 use structopt::StructOpt;
+use termcolor::ColorChoice;
 
 #[derive(Debug, StructOpt)]
 pub struct Opts {
@@ -40,9 +42,19 @@ fn run(opts: &Opts) -> Fallible<()> {
     }
 
     input::read(&opts.input, |rdr| {
-        io::copy(rdr, &mut io::stdout().lock()).context("failed writing to stdout")?;
+        io::copy(rdr, &mut stdout()).context("failed writing to stdout")?;
         Ok(())
     })
+}
+
+fn stdout() -> StandardStream {
+    let color_choice = if is_tty_stdout() {
+        ColorChoice::Auto
+    } else {
+        ColorChoice::Never
+    };
+
+    grep_cli::stdout(color_choice)
 }
 
 fn fmt_error(err: &Error) -> String {

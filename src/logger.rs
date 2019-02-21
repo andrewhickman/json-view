@@ -1,5 +1,6 @@
 use std::io::{self, prelude::*};
 
+use grep_cli::is_tty_stderr;
 use log::{Log, SetLoggerError};
 use structopt::StructOpt;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
@@ -35,7 +36,7 @@ impl Opts {
 
 impl Logger {
     fn new() -> Self {
-        let color_choice = if atty::is(atty::Stream::Stderr) {
+        let color_choice = if is_tty_stderr() {
             ColorChoice::Auto
         } else {
             ColorChoice::Never
