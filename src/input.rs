@@ -1,8 +1,8 @@
-use std::fs::File;
-use std::io::{stdin, BufRead, BufReader};
+use std::fs::{self, File};
+use std::io::{self, stdin, BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
-use failure::{Fallible, ResultExt, err_msg};
+use failure::{err_msg, Fallible, ResultExt};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -33,6 +33,47 @@ pub struct DataOpts {
     dir: Option<PathBuf>,
 }
 
+#[derive(Debug, StructOpt)]
+pub struct Start {
+    #[structopt(long, short)]
+    force: bool,
+    #[structopt(long)]
+    append: bool,
+}
+
+impl Start {
+    pub fn run(&self, opts: &Opts) -> Fallible<()> {
+        let dir = opts.data.dir()?;
+        log::trace!("Creating data directory {}", dir.display());
+        fs::create_dir_all(&dir)
+            .context(format!("failed to create directory {}", dir.display()))?;
+
+        if !is_readable_stdin() {
+            return Err(err_msg("could not read from stdin"));
+        }
+
+        let path = opts.data.file(dir);
+        log::debug!("Creating data file {}", path.display());
+        let mut file = match fs::OpenOptions::new()
+            .write(true)
+            .append(self.append)
+            .create_new(!self.force)
+            .open(&path)
+        {
+            Ok(file) => Ok(file),
+            Err(ref err) if err.kind() == io::ErrorKind::AlreadyExists => {
+                Err(err_msg("will not overwrite file without --force flag"))
+            }
+            Err(err) => Err(err.into()),
+        }
+        .context(format!("failed to create file {}", path.display()))?;
+
+        io::copy(&mut stdin().lock(), &mut file)
+            .context(format!("failed to write to file {}", path.display()))?;
+        Ok(())
+    }
+}
+
 pub fn read<F, R>(opts: &Opts, mut f: F) -> Fallible<R>
 where
     F: FnMut(&mut dyn BufRead) -> Fallible<R>,
@@ -45,23 +86,23 @@ where
         f(&mut stdin().lock())
     } else {
         let dir = opts.data.dir()?;
-        let file = opts.data.file();
-        let path = dir.join(file).with_extension("json");
+        let path = opts.data.file(dir);
         log::debug!("Reading from data file {}.", path.display());
         f(&mut BufReader::new(open(&path)?))
     }
 }
 
 fn open(path: &Path) -> Fallible<File> {
-    Ok(File::open(path).context(format!("failed to open {}", path.display()))?)
+    Ok(File::open(path).context(format!("failed to open file {}", path.display()))?)
 }
 
 impl DataOpts {
-    fn file(&self) -> &Path {
-        match &self.file {
+    fn file(&self, dir: PathBuf) -> PathBuf {
+        dir.join::<&Path>(match &self.file {
             Some(file) => file.as_ref(),
-            None => "data".as_ref()
-        }
+            None => "data".as_ref(),
+        })
+        .with_extension("json")
     }
 
     fn dir(&self) -> Fallible<PathBuf> {
@@ -80,8 +121,8 @@ impl DataOpts {
 pub fn is_readable_stdin() -> bool {
     #[cfg(unix)]
     fn imp() -> bool {
-        use std::os::unix::fs::FileTypeExt;
         use same_file::Handle;
+        use std::os::unix::fs::FileTypeExt;
 
         let ft = match Handle::stdin().and_then(|h| h.as_file().metadata()) {
             Err(_) => return false,

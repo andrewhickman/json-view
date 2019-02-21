@@ -67,7 +67,7 @@ impl Logger {
             writeln!(writer, "{}", first)?;
         }
         for line in lines {
-            writeln!(writer, "{:>pad$}  {}", line, "", pad = PAD)?;
+            writeln!(writer, "{:>pad$}  {}", "", line, pad = PAD)?;
         }
 
         Ok(())

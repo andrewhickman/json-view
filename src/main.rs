@@ -12,6 +12,14 @@ pub struct Opts {
     input: input::Opts,
     #[structopt(flatten)]
     logger: logger::Opts,
+    #[structopt(subcommand)]
+    cmd: Option<Command>,
+}
+
+#[derive(Debug, StructOpt)]
+pub enum Command {
+    #[structopt(name = "start", about = "Initialize data file from stdin")]
+    Start(input::Start),
 }
 
 fn main() {
@@ -25,6 +33,12 @@ fn main() {
 }
 
 fn run(opts: &Opts) -> Fallible<()> {
+    if let Some(cmd) = &opts.cmd {
+        return match cmd {
+            Command::Start(start) => start.run(&opts.input),
+        };
+    }
+
     input::read(&opts.input, |rdr| {
         io::copy(rdr, &mut io::stdout().lock()).context("failed writing to stdout")?;
         Ok(())
