@@ -47,14 +47,13 @@ impl Start {
         let dir = opts.data.dir()?;
         log::trace!("Creating data directory {}", dir.display());
         fs::create_dir_all(&dir)
-            .context(format!("failed to create directory {}", dir.display()))?;
+            .context(format!("Failed to create directory {}", dir.display()))?;
 
         if !is_readable_stdin() {
-            return Err(err_msg("could not read from stdin"));
+            return Err(err_msg("Stdin not readable"));
         }
 
         let path = opts.data.file(dir);
-        log::debug!("Creating data file {}", path.display());
         let mut file = match fs::OpenOptions::new()
             .write(true)
             .append(self.append)
@@ -63,14 +62,15 @@ impl Start {
         {
             Ok(file) => Ok(file),
             Err(ref err) if err.kind() == io::ErrorKind::AlreadyExists => {
-                Err(err_msg("will not overwrite file without --force flag"))
+                Err(err_msg("Will not overwrite file without --force flag"))
             }
             Err(err) => Err(err.into()),
         }
-        .context(format!("failed to create file {}", path.display()))?;
+        .context(format!("Failed to create file {}", path.display()))?;
 
         io::copy(&mut stdin().lock(), &mut file)
-            .context(format!("failed to write to file {}", path.display()))?;
+            .context(format!("Failed to write to file {}", path.display()))?;
+        log::info!("Created data file {}", path.display());
         Ok(())
     }
 }
@@ -94,7 +94,7 @@ where
 }
 
 fn open(path: &Path) -> Fallible<File> {
-    Ok(File::open(path).context(format!("failed to open file {}", path.display()))?)
+    Ok(File::open(path).context(format!("Failed to open file {}", path.display()))?)
 }
 
 impl DataOpts {
@@ -113,7 +113,7 @@ impl DataOpts {
             Ok(dir.join("json-view"))
         } else {
             Err(err_msg(
-                "data directory option not set and failed to find standard data directory",
+                "Data directory option not set and failed to find standard data directory",
             ))
         }
     }

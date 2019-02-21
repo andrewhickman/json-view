@@ -42,7 +42,7 @@ fn run(opts: &Opts) -> Fallible<()> {
     }
 
     input::read(&opts.input, |rdr| {
-        io::copy(rdr, &mut stdout()).context("failed writing to stdout")?;
+        io::copy(rdr, &mut stdout()).context("Failed to write to stdout")?;
         Ok(())
     })
 }
