@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::io::{self, stdin, BufRead, BufReader};
+use std::io::{self, stdin, BufReader, Cursor, Read};
 use std::path::{Path, PathBuf};
 
 use failure::{err_msg, Fallible, ResultExt};
@@ -39,10 +39,17 @@ pub struct DataOpts {
 
 #[derive(Debug, StructOpt)]
 pub struct Start {
+    /// Overwrite the file if it already exists
     #[structopt(long, short)]
     force: bool,
-    #[structopt(long)]
+    /// Append to the file if it already exists
+    #[structopt(long, short, conflicts_with = "force")]
     append: bool,
+}
+
+pub enum Input {
+    File(BufReader<File>),
+    Memory(Cursor<String>),
 }
 
 impl Start {
@@ -78,26 +85,33 @@ impl Start {
     }
 }
 
-pub fn read<F, R>(opts: &Opts, mut f: F) -> Fallible<R>
-where
-    F: FnMut(&mut dyn BufRead) -> Fallible<R>,
-{
+pub fn read(opts: &Opts) -> Fallible<Input> {
     if let Some(path) = &opts.input {
         log::debug!("Reading from input file {}.", path.display());
-        f(&mut BufReader::new(open(path)?))
+        Input::file(path)
     } else if is_readable_stdin() {
         log::debug!("Reading from stdin.");
-        f(&mut stdin().lock())
+        Input::stdin()
     } else {
         let dir = opts.data.dir()?;
         let path = opts.data.file(dir);
         log::debug!("Reading from data file {}.", path.display());
-        f(&mut BufReader::new(open(&path)?))
+        Input::file(path)
     }
 }
 
-fn open(path: &Path) -> Fallible<File> {
-    Ok(File::open(path).context(format!("Failed to open file {}", path.display()))?)
+impl Input {
+    fn file(path: impl AsRef<Path>) -> Fallible<Self> {
+        Ok(Input::File(BufReader::new(File::open(path.as_ref()).context(
+            format!("Failed to open file {}", path.as_ref().display()),
+        )?)))
+    }
+
+    fn stdin() -> Fallible<Self> {
+        let mut buf = String::new();
+        stdin().lock().read_to_string(&mut buf)?;
+        Ok(Input::Memory(Cursor::new(buf)))
+    }
 }
 
 impl DataOpts {

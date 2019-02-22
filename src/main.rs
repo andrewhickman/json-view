@@ -1,8 +1,6 @@
-mod ser;
 mod input;
 mod logger;
-
-use std::io;
+mod ser;
 
 use failure::{Error, Fallible, ResultExt};
 use grep_cli::{is_tty_stdout, StandardStream};
@@ -10,16 +8,18 @@ use structopt::clap::AppSettings;
 use structopt::StructOpt;
 use termcolor::ColorChoice;
 
+use crate::input::Input;
+
 /// json-view is a utility for viewing json files in the terminal.
 #[derive(Debug, StructOpt)]
-#[structopt(
-    raw(global_settings = "&[AppSettings::UnifiedHelpMessage]")
-)]
+#[structopt(raw(global_settings = "&[AppSettings::UnifiedHelpMessage]"))]
 pub struct Opts {
     #[structopt(flatten)]
     input: input::Opts,
     #[structopt(flatten)]
     logger: logger::Opts,
+    #[structopt(flatten)]
+    ser: ser::Opts,
     #[structopt(subcommand)]
     cmd: Option<Command>,
 }
@@ -47,10 +47,13 @@ fn run(opts: &Opts) -> Fallible<()> {
         };
     }
 
-    input::read(&opts.input, |rdr| {
-        io::copy(rdr, &mut stdout()).context("Failed to write to stdout")?;
-        Ok(())
-    })
+    let input = input::read(&opts.input)?;
+    match input {
+        Input::File(file) => ser::to_writer(opts.ser, file, stdout()),
+        Input::Memory(cursor) => ser::to_writer(opts.ser, cursor, stdout()),
+    }
+    .context("Failed to write to stdout")?;
+    Ok(())
 }
 
 fn stdout() -> StandardStream {
