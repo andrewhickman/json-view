@@ -67,6 +67,7 @@ impl Start {
         let mut file = match fs::OpenOptions::new()
             .write(true)
             .append(self.append)
+            .truncate(!self.append)
             .create_new(!self.force)
             .open(&path)
         {

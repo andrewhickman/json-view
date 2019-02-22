@@ -52,8 +52,6 @@ fn run(opts: &Opts) -> Fallible<()> {
         Input::File(file) => ser::to_writer(opts.ser, file, stdout()),
         Input::Memory(cursor) => ser::to_writer(opts.ser, cursor, stdout()),
     }
-    .context("Failed to write to stdout")?;
-    Ok(())
 }
 
 fn stdout() -> StandardStream {

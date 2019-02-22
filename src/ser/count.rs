@@ -30,6 +30,7 @@ where
 
     let mut ser = json::Serializer::with_formatter(io::sink(), &mut counter);
     transcode(de, &mut ser)?;
+    log::trace!("Counted {} objects in file", counter.objects.len());
 
     let mut excludes = ExcludeSet::new();
     while counter.length > opts.max_length {
