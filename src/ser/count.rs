@@ -3,7 +3,7 @@ use std::collections::BinaryHeap;
 use std::io;
 use std::ops::Range;
 
-use failure::Fallible;
+use failure::{Fallible, ResultExt};
 use json::ser::Formatter;
 use serde::de;
 use serde_transcode::transcode;
@@ -29,7 +29,7 @@ where
     };
 
     let mut ser = json::Serializer::with_formatter(io::sink(), &mut counter);
-    transcode(de, &mut ser)?;
+    transcode(de, &mut ser).context("Failed to read json from input")?;
     log::trace!("Counted {} objects in file", counter.objects.len());
 
     let mut excludes = ExcludeSet::new();
@@ -68,9 +68,9 @@ impl Counter {
                 length: 0,
                 start: self.position,
             });
-            self.position += 1;
         }
         self.depth += 1;
+        self.position += 1;
     }
 
     fn end(&mut self) {
@@ -83,6 +83,7 @@ impl Counter {
                 range: start..self.position,
             });
         }
+        self.position += 1;
     }
 
     fn skip(&self) -> bool {
