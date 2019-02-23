@@ -1,20 +1,20 @@
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
-use std::fmt::Display;
 use std::io::Write;
 use std::ops::Range;
 
-use failure::{Fallible, Error};
-use json::ser::PrettyFormatter;
-use serde::{de, ser};
+use failure::Fallible;
+use serde::de;
 use serde_transcode::transcode;
 
-pub fn to_writer<'de, D, W>(excludes: ExcludeSet, de: D, wtr: W) -> Fallible<()>
+pub fn to_writer<'de, D, W>(_excludes: ExcludeSet, de: D, wtr: W) -> Fallible<()>
 where
     D: de::Deserializer<'de>,
     W: Write,
 {
-    unimplemented!()
+    let mut ser = json::Serializer::pretty(wtr);
+    transcode(de, &mut ser)?;
+    Ok(())
 }
 
 #[derive(Debug)]

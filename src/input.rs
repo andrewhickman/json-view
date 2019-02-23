@@ -103,9 +103,10 @@ pub fn read(opts: &Opts) -> Fallible<Input> {
 
 impl Input {
     fn file(path: impl AsRef<Path>) -> Fallible<Self> {
-        Ok(Input::File(BufReader::new(File::open(path.as_ref()).context(
-            format!("Failed to open file {}", path.as_ref().display()),
-        )?)))
+        Ok(Input::File(BufReader::new(
+            File::open(path.as_ref())
+                .context(format!("Failed to open file {}", path.as_ref().display()))?,
+        )))
     }
 
     fn stdin() -> Fallible<Self> {

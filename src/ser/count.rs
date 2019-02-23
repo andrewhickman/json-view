@@ -83,8 +83,10 @@ impl Counter {
     }
 
     fn incr(&mut self) {
-        self.stack.last_mut().unwrap().length += 1;
-        self.length += 1;
+        if !self.skip() {
+            self.stack.last_mut().unwrap().length += 1;
+            self.length += 1;
+        }
     }
 }
 

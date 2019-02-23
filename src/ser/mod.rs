@@ -7,6 +7,8 @@ use failure::Fallible;
 use json::de::Deserializer;
 use structopt::StructOpt;
 
+use self::exclude::ExcludeSet;
+
 #[derive(Copy, Clone, Debug, StructOpt)]
 pub struct Opts {
     /// The maximum number of lines a json value can take up when printed.
@@ -22,8 +24,13 @@ where
     R: Read + Seek,
     W: Write,
 {
-    let excludes = count::count(opts, &mut Deserializer::from_reader(rdr.by_ref()))?;
-    rdr.seek(SeekFrom::Start(0))?;
+    let excludes = if opts.max_length != 0 {
+        let excludes = count::count(opts, &mut Deserializer::from_reader(rdr.by_ref()))?;
+        rdr.seek(SeekFrom::Start(0))?;
+        excludes
+    } else {
+        ExcludeSet::new()
+    };
     exclude::to_writer(excludes, &mut Deserializer::from_reader(rdr), wtr)?;
     Ok(())
 }

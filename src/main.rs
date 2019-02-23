@@ -2,7 +2,7 @@ mod input;
 mod logger;
 mod ser;
 
-use failure::{Error, Fallible, ResultExt};
+use failure::{Error, Fallible};
 use grep_cli::{is_tty_stdout, StandardStream};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
