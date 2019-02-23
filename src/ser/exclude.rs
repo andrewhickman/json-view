@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 use std::io::{self, Write};
 use std::ops::Range;
 
@@ -39,9 +39,9 @@ impl Excluder {
     where
         W: Write
     {
-        if self.excludes.contains(self.position) {
+        if let Some(length) = self.excludes.get(self.position) {
             if self.writing() {
-                writer.write_all(b" ... ")?;
+                write!(writer, " {} items... ", length)?
             }
             self.depth += 1;
         }
@@ -50,7 +50,7 @@ impl Excluder {
     }
 
     fn end(&mut self) {
-        if self.excludes.contains(self.position) {
+        if let Some(_) = self.excludes.get(self.position) {
             self.depth -= 1;
         }
         self.position += 1;
@@ -276,22 +276,24 @@ impl Formatter for Excluder {
 
 #[derive(Debug)]
 pub struct ExcludeSet {
-    indices: BTreeSet<u32>,
+    indices: BTreeMap<u32, u32>,
 }
 
 impl ExcludeSet {
     pub fn new() -> Self {
         ExcludeSet {
-            indices: BTreeSet::new(),
+            indices: BTreeMap::new(),
         }
     }
 
-    pub fn insert(&mut self, range: Range<u32>) {
-        self.indices.insert(range.start);
-        self.indices.insert(range.end);
+    pub fn insert(&mut self, range: Range<u32>, length: u32) {
+        self.indices.insert(range.start, length);
+        self.indices.insert(range.end, 0);
+
+        // TODO remove subranges
     }
 
-    fn contains(&self, index: u32) -> bool {
-        self.indices.contains(&index)
+    fn get(&self, index: u32) -> Option<u32> {
+        self.indices.get(&index).cloned()
     }
 }

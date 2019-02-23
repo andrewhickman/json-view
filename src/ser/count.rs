@@ -15,10 +15,6 @@ pub fn count<'de, D>(opts: Opts, de: D) -> Fallible<ExcludeSet>
 where
     D: de::Deserializer<'de>,
 {
-    if opts.max_length == 0 {
-        return Ok(ExcludeSet::new());
-    }
-
     let mut counter = Counter {
         opts,
         position: 0,
@@ -33,18 +29,22 @@ where
     log::trace!("Counted {} objects in file", counter.objects.len());
 
     let mut excludes = ExcludeSet::new();
-    while counter.length > opts.max_length {
-        let max = counter.objects.pop().unwrap();
-        counter.length -= max.length;
-        excludes.insert(max.range);
+    if opts.max_length != 0 {
+        while counter.length > opts.max_length {
+            log::trace!("excluding item (length)");
+            let max = counter.objects.pop().unwrap();
+            excludes.insert(max.range, max.length);
+            counter.length -= max.length;
+        }
     }
 
     if let Some(max_depth) = opts.max_depth {
         while let Some(max) = counter.objects.pop() {
             debug_assert!(max.depth <= max_depth);
             if max.depth == max_depth {
+                log::trace!("excluding item (depth)");
+                excludes.insert(max.range, max.length);
                 counter.length -= max.length;
-                excludes.insert(max.range);
             }
         }
     }
@@ -93,9 +93,18 @@ impl Counter {
         }
     }
 
+    fn skip1(&self) -> bool {
+        match self.opts.max_depth {
+            Some(max) => self.depth > max + 1,
+            None => false,
+        }
+    }
+
     fn incr(&mut self) {
-        self.stack.last_mut().unwrap().length += 1;
-        self.length += 1;
+        if !self.skip1() {
+            self.stack.last_mut().unwrap().length += 1;
+            self.length += 1;
+        }
     }
 }
 
