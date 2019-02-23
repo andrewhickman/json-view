@@ -35,11 +35,18 @@ impl Excluder {
         self.depth == 0
     }
 
-    fn begin(&mut self) {
+    fn begin<W: ?Sized>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: Write
+    {
         if self.excludes.contains(self.position) {
+            if self.writing() {
+                writer.write_all(b" ... ")?;
+            }
             self.depth += 1;
         }
         self.position += 1;
+        Ok(())
     }
 
     fn end(&mut self) {
@@ -190,8 +197,7 @@ impl Formatter for Excluder {
         W: Write,
     {
         self.delegate(|f| f.begin_array(writer))?;
-        self.begin();
-        Ok(())
+        self.begin(writer)
     }
 
     fn end_array<W: ?Sized>(&mut self, writer: &mut W) -> io::Result<()>
@@ -221,8 +227,7 @@ impl Formatter for Excluder {
         W: Write,
     {
         self.delegate(|f| f.begin_object(writer))?;
-        self.begin();
-        Ok(())
+        self.begin(writer)
     }
 
     fn end_object<W: ?Sized>(&mut self, writer: &mut W) -> io::Result<()>
