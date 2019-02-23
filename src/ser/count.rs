@@ -39,6 +39,16 @@ where
         excludes.insert(max.range);
     }
 
+    if let Some(max_depth) = opts.max_depth {
+        while let Some(max) = counter.objects.pop() {
+            debug_assert!(max.depth <= max_depth);
+            if max.depth == max_depth {
+                counter.length -= max.length;
+                excludes.insert(max.range);
+            }
+        }
+    }
+
     Ok(excludes)
 }
 
@@ -58,15 +68,15 @@ impl Counter {
                 length: 0,
                 start: self.position,
             });
-            self.depth += 1;
             self.position += 1;
         }
+        self.depth += 1;
     }
 
     fn end(&mut self) {
+        self.depth -= 1;
         if !self.skip() {
             let HalfObject { start, length } = self.stack.pop().unwrap();
-            self.depth -= 1;
             self.objects.push(Object {
                 depth: self.depth,
                 length,
@@ -77,16 +87,14 @@ impl Counter {
 
     fn skip(&self) -> bool {
         match self.opts.max_depth {
-            Some(max) => self.depth < max,
+            Some(max) => self.depth > max,
             None => false,
         }
     }
 
     fn incr(&mut self) {
-        if !self.skip() {
-            self.stack.last_mut().unwrap().length += 1;
-            self.length += 1;
-        }
+        self.stack.last_mut().unwrap().length += 1;
+        self.length += 1;
     }
 }
 
@@ -134,11 +142,13 @@ impl Formatter for &'_ mut Counter {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
 struct HalfObject {
     start: u32,
     length: u32,
 }
 
+#[derive(Clone, Debug)]
 struct Object {
     // The depth this object is at.
     depth: u32,
