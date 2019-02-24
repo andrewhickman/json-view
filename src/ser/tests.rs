@@ -1,5 +1,5 @@
-use std::io::Cursor;
 use std::cmp::{max, min};
+use std::io::Cursor;
 
 use proptest::prelude::*;
 
@@ -29,7 +29,7 @@ prop_compose! {
         max_depth in prop::option::of(0..16u32)
     ) -> Opts {
         Opts {
-            max_length: max_length.unwrap_or(0), 
+            max_length: max_length.unwrap_or(0),
             max_depth
         }
     }

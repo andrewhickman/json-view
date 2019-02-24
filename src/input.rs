@@ -12,7 +12,7 @@ pub struct Opts {
     #[structopt(
         name = "INPUT",
         help = "Input file, or '-' to read from stdin",
-        conflicts_with = "DATA",
+        conflicts_with = "data",
         parse(from_os_str)
     )]
     input: Option<PathBuf>,
@@ -24,9 +24,9 @@ pub struct Opts {
 pub struct DataOpts {
     /// The name of a file in the application's data directory to use as input.
     #[structopt(
-        name = "DATA",
-        long = "data",
-        short = "d",
+        name = "data",
+        long,
+        short,
         help = "Data file to use",
         global = true,
         parse(from_os_str)

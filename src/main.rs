@@ -20,6 +20,9 @@ pub struct Opts {
     logger: logger::Opts,
     #[structopt(flatten)]
     ser: ser::Opts,
+    /// A pointer to select a value to output.
+    #[structopt(long, short)]
+    pointer: Option<String>,
     #[structopt(subcommand)]
     cmd: Option<Command>,
 }
@@ -48,9 +51,16 @@ fn run(opts: &Opts) -> Fallible<()> {
     }
 
     let input = input::read(&opts.input)?;
-    match input {
-        Input::File(file) => ser::shorten(opts.ser, file, stdout()),
-        Input::Memory(cursor) => ser::shorten(opts.ser, cursor, stdout()),
+    if let Some(ptr) = &opts.pointer {
+        match input {
+            Input::File(file) => ser::project(opts.ser, ptr, file, stdout()),
+            Input::Memory(cursor) => ser::project(opts.ser, ptr, cursor, stdout()),
+        }
+    } else {
+        match input {
+            Input::File(file) => ser::shorten(opts.ser, file, stdout()),
+            Input::Memory(cursor) => ser::shorten(opts.ser, cursor, stdout()),
+        }
     }
 }
 

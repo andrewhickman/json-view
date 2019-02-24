@@ -11,7 +11,7 @@ use super::Opts;
 
 pub fn count<'de, F>(opts: Opts, f: F) -> Fallible<ExcludeSet>
 where
-    F: FnOnce(&mut json::Serializer<Sink, &mut Counter>) -> Fallible<()>
+    F: FnOnce(&mut json::Serializer<Sink, &mut Counter>) -> Fallible<()>,
 {
     let mut counter = Counter {
         opts,
