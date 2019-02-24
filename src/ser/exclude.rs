@@ -4,12 +4,10 @@ use std::ops::Range;
 
 use failure::Fallible;
 use json::ser::{CharEscape, Formatter, PrettyFormatter};
-use serde::de;
-use serde_transcode::transcode;
 
-pub fn to_writer<'de, D, W>(excludes: ExcludeSet, de: D, writer: W) -> Fallible<()>
+pub fn write<'de, F, W>(excludes: ExcludeSet, writer: W, f: F) -> Fallible<()>
 where
-    D: de::Deserializer<'de>,
+    F: FnOnce(&mut json::Serializer<W, Excluder>) -> Fallible<()>,
     W: Write,
 {
     let excluder = Excluder {
@@ -19,11 +17,10 @@ where
         pretty: PrettyFormatter::new(),
     };
     let mut ser = json::Serializer::with_formatter(writer, excluder);
-    transcode(de, &mut ser)?;
-    Ok(())
+    f(&mut ser)
 }
 
-struct Excluder {
+pub struct Excluder {
     excludes: ExcludeSet,
     position: u32,
     depth: u32,

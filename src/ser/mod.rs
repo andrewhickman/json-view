@@ -5,9 +5,10 @@ mod tests;
 
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use failure::Fallible;
+use failure::{Fallible, ResultExt};
 use json::de::Deserializer;
 use structopt::StructOpt;
+use serde_transcode::transcode;
 
 #[derive(Copy, Clone, Debug, StructOpt)]
 pub struct Opts {
@@ -19,12 +20,22 @@ pub struct Opts {
     max_depth: Option<u32>,
 }
 
-pub fn to_writer<R, W>(opts: Opts, mut rdr: R, wtr: W) -> Fallible<()>
+pub fn shorten<R, W>(opts: Opts, mut rdr: R, wtr: W) -> Fallible<()>
 where
     R: Read + Seek,
     W: Write,
 {
-    let excludes = count::count(opts, &mut Deserializer::from_reader(rdr.by_ref()))?;
+    let excludes = count::count(opts, |ser| {
+        let mut de = Deserializer::from_reader(rdr.by_ref());
+        transcode(&mut de, ser).context("Failed to read json from input")?;
+        Ok(())
+    })?;
+
     rdr.seek(SeekFrom::Start(0))?;
-    exclude::to_writer(excludes, &mut Deserializer::from_reader(rdr), wtr)
+
+    exclude::write(excludes, wtr, |ser| {
+        let mut de = Deserializer::from_reader(rdr);
+        transcode(&mut de, ser).context(format!("Failed to write"))?;
+        Ok(())
+    })
 }

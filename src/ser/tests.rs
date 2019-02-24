@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 
 use proptest::prelude::*;
 
-use super::{to_writer, Opts};
+use super::{shorten, Opts};
 
 fn arb_json() -> impl Strategy<Value = json::Value> {
     let leaf = prop_oneof![
@@ -39,7 +39,7 @@ fn run(opts: Opts, data: &str) -> String {
     let mut result = Vec::new();
     let rdr = Cursor::new(data);
     let wtr = Cursor::new(&mut result);
-    to_writer(opts, rdr, wtr).unwrap();
+    shorten(opts, rdr, wtr).unwrap();
     String::from_utf8(result).unwrap()
 }
 

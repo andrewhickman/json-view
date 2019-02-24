@@ -1,19 +1,17 @@
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use std::io;
+use std::io::{self, Sink};
 use std::ops::Range;
 
-use failure::{Fallible, ResultExt};
+use failure::Fallible;
 use json::ser::Formatter;
-use serde::de;
-use serde_transcode::transcode;
 
 use super::exclude::ExcludeSet;
 use super::Opts;
 
-pub fn count<'de, D>(opts: Opts, de: D) -> Fallible<ExcludeSet>
+pub fn count<'de, F>(opts: Opts, f: F) -> Fallible<ExcludeSet>
 where
-    D: de::Deserializer<'de>,
+    F: FnOnce(&mut json::Serializer<Sink, &mut Counter>) -> Fallible<()>
 {
     let mut counter = Counter {
         opts,
@@ -25,7 +23,7 @@ where
     };
 
     let mut ser = json::Serializer::with_formatter(io::sink(), &mut counter);
-    transcode(de, &mut ser).context("Failed to read json from input")?;
+    f(&mut ser)?;
     log::trace!("Counted {} objects in file", counter.objects.len());
 
     let mut excludes = ExcludeSet::new();
@@ -52,7 +50,7 @@ where
     Ok(excludes)
 }
 
-struct Counter {
+pub struct Counter {
     opts: Opts,
     position: u32,
     depth: u32,

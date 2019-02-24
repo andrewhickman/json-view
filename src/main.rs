@@ -49,8 +49,8 @@ fn run(opts: &Opts) -> Fallible<()> {
 
     let input = input::read(&opts.input)?;
     match input {
-        Input::File(file) => ser::to_writer(opts.ser, file, stdout()),
-        Input::Memory(cursor) => ser::to_writer(opts.ser, cursor, stdout()),
+        Input::File(file) => ser::shorten(opts.ser, file, stdout()),
+        Input::Memory(cursor) => ser::shorten(opts.ser, cursor, stdout()),
     }
 }
 
