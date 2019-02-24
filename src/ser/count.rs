@@ -19,7 +19,7 @@ where
         opts,
         position: 0,
         depth: 0,
-        length: 0,
+        length: 1,
         stack: Vec::new(),
         objects: BinaryHeap::new(),
     };
@@ -76,7 +76,11 @@ impl Counter {
     fn end(&mut self) {
         self.depth -= 1;
         if !self.skip() {
-            let HalfObject { start, length } = self.stack.pop().unwrap();
+            let HalfObject { start, mut length } = self.stack.pop().unwrap();
+            if length != 0 {
+                length += 1;
+                self.length += 1;
+            }
             self.objects.push(Object {
                 depth: self.depth,
                 length,

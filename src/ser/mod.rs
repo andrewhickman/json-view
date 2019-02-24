@@ -1,5 +1,7 @@
 mod count;
 mod exclude;
+#[cfg(test)]
+mod tests;
 
 use std::io::{Read, Seek, SeekFrom, Write};
 

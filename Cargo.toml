@@ -31,3 +31,6 @@ package = "serde_json"
 [dependencies.log]
 version = "0.4.6"
 features = ["std"]
+
+[dev-dependencies]
+proptest = "0.9.1"

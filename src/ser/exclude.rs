@@ -37,7 +37,7 @@ impl Excluder {
 
     fn begin<W: ?Sized>(&mut self, writer: &mut W) -> io::Result<()>
     where
-        W: Write
+        W: Write,
     {
         if let Some(length) = self.excludes.get(self.position) {
             if self.writing() {
