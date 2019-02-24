@@ -26,8 +26,8 @@ where
     f(&mut ser)?;
 
     let mut excludes = ExcludeSet::new();
-    if opts.max_length != 0 {
-        while counter.length > opts.max_length {
+    if let Some(max_length) = opts.max_length {
+        while counter.length > max_length {
             let max = counter.objects.pop().unwrap();
             excludes.insert(max.range, max.length);
             counter.length -= max.length;

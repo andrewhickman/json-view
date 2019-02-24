@@ -15,8 +15,8 @@ use structopt::StructOpt;
 #[structopt(rename_all = "kebab-case")]
 pub struct Opts {
     /// The maximum number of lines a json value can take up when printed.
-    #[structopt(long, short = "L", default_value = "64")]
-    max_length: u32,
+    #[structopt(long, short = "L")]
+    max_length: Option<u32>,
     /// The maximum depth to which a json value should be printed.
     #[structopt(long, short = "D")]
     max_depth: Option<u32>,
@@ -24,7 +24,7 @@ pub struct Opts {
 
 impl Opts {
     fn is_identity(&self) -> bool {
-        self.max_length == 0 && self.max_depth.is_none()
+        self.max_length.is_none() && self.max_depth.is_none()
     }
 }
 

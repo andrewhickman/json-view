@@ -29,7 +29,7 @@ prop_compose! {
         max_depth in prop::option::of(0..16u32)
     ) -> Opts {
         Opts {
-            max_length: max_length.unwrap_or(0),
+            max_length,
             max_depth
         }
     }
@@ -66,7 +66,7 @@ proptest! {
         let data = json::to_string_pretty(&value).unwrap();
         prop_assert_eq!(run(Opts {
             max_depth: None,
-            max_length: 0,
+            max_length: None,
         }, &data), data)
     }
 
@@ -79,19 +79,19 @@ proptest! {
         let (length, depth) = get_limits(&processed);
 
         match (opts.max_length, opts.max_depth) {
-            (0, None) => {
+            (None, None) => {
                 prop_assert_eq!(length, orig_length);
                 prop_assert_eq!(depth, orig_depth)
             },
-            (max_length, None) => {
+            (Some(max_length), None) => {
                 prop_assert!(length <= min(orig_length, max_length));
                 prop_assert!(depth <= orig_depth)
             },
-            (0, Some(max_depth)) => {
+            (None, Some(max_depth)) => {
                 prop_assert!(length <= orig_length);
                 prop_assert_eq!(depth, min(orig_depth, max_depth + 1));
             },
-            (max_length, Some(max_depth)) => {
+            (Some(max_length), Some(max_depth)) => {
                 prop_assert!(length <= min(orig_length, max_length));
                 prop_assert!(depth <= min(orig_depth, max_depth + 1));
             },
