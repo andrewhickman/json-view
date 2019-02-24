@@ -2,7 +2,7 @@ use std::fs::{self, File};
 use std::io::{self, stdin, BufReader, Cursor, Read};
 use std::path::{Path, PathBuf};
 
-use failure::{err_msg, Fallible, ResultExt};
+use failure::{Fallible, ResultExt, ensure, format_err};
 use grep_cli::is_readable_stdin;
 use structopt::StructOpt;
 
@@ -33,7 +33,7 @@ pub struct DataOpts {
     )]
     file: Option<PathBuf>,
     /// The path the application should use for data.
-    #[structopt(name = "DIR", long = "data-dir", global = true, parse(from_os_str))]
+    #[structopt(long = "data-dir", global = true, parse(from_os_str))]
     dir: Option<PathBuf>,
 }
 
@@ -47,6 +47,13 @@ pub struct Start {
     append: bool,
 }
 
+#[derive(Debug, StructOpt)]
+#[structopt(rename_all = "kebab-case")]
+pub struct Clean {
+    #[structopt(long)]
+    dry_run: bool,
+}
+
 pub enum Input {
     File(BufReader<File>),
     Memory(Cursor<String>),
@@ -55,13 +62,11 @@ pub enum Input {
 impl Start {
     pub fn run(&self, opts: &Opts) -> Fallible<()> {
         let dir = opts.data.dir()?;
-        log::trace!("Creating data directory {}", dir.display());
+        log::trace!("Creating data directory `{}`.", dir.display());
         fs::create_dir_all(&dir)
-            .context(format!("Failed to create directory {}", dir.display()))?;
+            .context(format!("Failed to create directory `{}`", dir.display()))?;
 
-        if !is_readable_stdin() {
-            return Err(err_msg("Stdin not readable"));
-        }
+        ensure!(is_readable_stdin(), "Stdin not readable");
 
         let path = opts.data.file(dir);
         let mut file = match fs::OpenOptions::new()
@@ -73,22 +78,44 @@ impl Start {
         {
             Ok(file) => Ok(file),
             Err(ref err) if err.kind() == io::ErrorKind::AlreadyExists => {
-                Err(err_msg("Will not overwrite file without --force flag"))
+                Err(format_err!("Will not overwrite file without --force flag"))
             }
             Err(err) => Err(err.into()),
         }
-        .context(format!("Failed to create file {}", path.display()))?;
+        .context(format!("Failed to create file `{}`", path.display()))?;
 
         io::copy(&mut stdin().lock(), &mut file)
-            .context(format!("Failed to write to file {}", path.display()))?;
-        log::info!("Created data file {}", path.display());
+            .context(format!("Failed to write to file `{}`", path.display()))?;
+        log::info!("Created data file `{}`.", path.display());
+        Ok(())
+    }
+}
+
+impl Clean {
+    pub fn run(&self, opts: &Opts) -> Fallible<()> {
+        let dir = opts.data.dir()?;
+        let entries = dir
+            .read_dir()
+            .context(format!("Failed to read directory `{}`", dir.display()))?;
+        for entry in entries {
+            let path = entry?.path();
+            if !path.is_dir() {
+                log::info!("Removing file `{}`.", path.display());
+                if !self.dry_run {
+                    fs::remove_file(&path)
+                        .context(format!("Failed to remove file `{}`", path.display()))?;
+                }
+            } else {
+                log::warn!("Ignoring unexpected directory `{}`.", path.display());
+            }
+        }
         Ok(())
     }
 }
 
 pub fn read(opts: &Opts) -> Fallible<Input> {
     if let Some(path) = &opts.input {
-        log::debug!("Reading from input file {}.", path.display());
+        log::debug!("Reading from input file `{}`.", path.display());
         Input::file(path)
     } else if is_readable_stdin() {
         log::debug!("Reading from stdin.");
@@ -96,7 +123,7 @@ pub fn read(opts: &Opts) -> Fallible<Input> {
     } else {
         let dir = opts.data.dir()?;
         let path = opts.data.file(dir);
-        log::debug!("Reading from data file {}.", path.display());
+        log::debug!("Reading from data file `{}`.", path.display());
         Input::file(path)
     }
 }
@@ -105,7 +132,7 @@ impl Input {
     fn file(path: impl AsRef<Path>) -> Fallible<Self> {
         Ok(Input::File(BufReader::new(
             File::open(path.as_ref())
-                .context(format!("Failed to open file {}", path.as_ref().display()))?,
+                .context(format!("Failed to open file `{}`", path.as_ref().display()))?,
         )))
     }
 
@@ -131,7 +158,7 @@ impl DataOpts {
         } else if let Some(dir) = dirs::data_dir() {
             Ok(dir.join("json-view"))
         } else {
-            Err(err_msg(
+            Err(format_err!(
                 "Data directory option not set and failed to find standard data directory",
             ))
         }

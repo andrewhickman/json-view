@@ -38,15 +38,13 @@ where
         if opts.is_identity() {
             Ok(json::to_writer_pretty(wtr, proj)?)
         } else {
-            let excludes = count::count(opts, |ser| {
-                Ok(proj.serialize(ser)?)
-            })?;
+            let excludes = count::count(opts, |ser| Ok(proj.serialize(ser)?))?;
             exclude::write(excludes, wtr, |ser| {
                 Ok(proj.serialize(ser).context("Failed to write output")?)
             })
         }
     } else {
-        log::warn!("No value found for json pointer {}", ptr);
+        log::warn!("No value found for json pointer `{}`.", ptr);
         Ok(())
     }
 }

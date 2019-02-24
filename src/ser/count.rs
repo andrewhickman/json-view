@@ -24,12 +24,10 @@ where
 
     let mut ser = json::Serializer::with_formatter(io::sink(), &mut counter);
     f(&mut ser)?;
-    log::trace!("Counted {} objects in file", counter.objects.len());
 
     let mut excludes = ExcludeSet::new();
     if opts.max_length != 0 {
         while counter.length > opts.max_length {
-            log::trace!("excluding item (length)");
             let max = counter.objects.pop().unwrap();
             excludes.insert(max.range, max.length);
             counter.length -= max.length;
@@ -40,7 +38,6 @@ where
         while let Some(max) = counter.objects.pop() {
             debug_assert!(max.depth <= max_depth);
             if max.depth == max_depth {
-                log::trace!("excluding item (depth)");
                 excludes.insert(max.range, max.length);
                 counter.length -= max.length;
             }

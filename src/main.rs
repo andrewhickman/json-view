@@ -12,7 +12,8 @@ use crate::input::Input;
 
 /// json-view is a utility for viewing json files in the terminal.
 #[derive(Debug, StructOpt)]
-#[structopt(raw(global_settings = "&[AppSettings::UnifiedHelpMessage]"))]
+#[structopt(raw(global_setting = "AppSettings::UnifiedHelpMessage"))]
+#[structopt(raw(global_setting = "AppSettings::VersionlessSubcommands"))]
 pub struct Opts {
     #[structopt(flatten)]
     input: input::Opts,
@@ -29,8 +30,10 @@ pub struct Opts {
 
 #[derive(Debug, StructOpt)]
 pub enum Command {
-    #[structopt(name = "start", about = "Initialize data file from stdin")]
+    #[structopt(name = "start", about = "Initialize a data file from stdin")]
     Start(input::Start),
+    #[structopt(name = "clean", about = "Remove all data files")]
+    Clean(input::Clean),
 }
 
 fn main() {
@@ -47,6 +50,7 @@ fn run(opts: &Opts) -> Fallible<()> {
     if let Some(cmd) = &opts.cmd {
         return match cmd {
             Command::Start(start) => start.run(&opts.input),
+            Command::Clean(clean) => clean.run(&opts.input),
         };
     }
 
