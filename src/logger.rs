@@ -16,15 +16,19 @@ struct Logger {
 
 #[derive(Copy, Clone, Debug, StructOpt)]
 pub struct Opts {
-    #[structopt(long = "debug", help = "Enables debug logging", global = true)]
+    #[structopt(long, help = "Enables debug logging", global = true)]
     debug: bool,
-    #[structopt(long = "trace", help = "Enables trace logging", global = true)]
+    #[structopt(long, help = "Enables trace logging", global = true)]
     trace: bool,
+    #[structopt(long, short, help = "Disable all logging to stderr", global = true)]
+    quiet: bool,
 }
 
 impl Opts {
     fn level_filter(self) -> log::LevelFilter {
-        if self.trace {
+        if self.quiet {
+            log::LevelFilter::Off
+        } else if self.trace {
             log::LevelFilter::Trace
         } else if self.debug {
             log::LevelFilter::Debug
