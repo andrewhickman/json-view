@@ -1,8 +1,8 @@
 use std::fs::{self, File};
-use std::io::{self, stdin, BufReader, Cursor, Read};
+use std::io::{self, stdin, BufReader, Cursor, Read, Stdin};
 use std::path::{Path, PathBuf};
 
-use failure::{Fallible, ResultExt, ensure, format_err};
+use failure::{ensure, format_err, Fallible, ResultExt};
 use grep_cli::is_readable_stdin;
 use structopt::StructOpt;
 
@@ -55,8 +55,9 @@ pub struct Clean {
 }
 
 pub enum Input {
-    File(BufReader<File>),
-    Memory(Cursor<String>),
+    File(BufReader<File>, PathBuf),
+    Stdin(Stdin),
+    Buffer(Cursor<String>),
 }
 
 impl Start {
@@ -129,17 +130,39 @@ pub fn read(opts: &Opts) -> Fallible<Input> {
 }
 
 impl Input {
-    fn file(path: impl AsRef<Path>) -> Fallible<Self> {
-        Ok(Input::File(BufReader::new(
-            File::open(path.as_ref())
-                .context(format!("Failed to open file `{}`", path.as_ref().display()))?,
-        )))
+    fn file(path: impl Into<PathBuf>) -> Fallible<Self> {
+        let path = path.into();
+        Ok(Input::File(
+            BufReader::new(
+                File::open(&path)
+                    .context(format!("Failed to open file `{}`", path.display()))?,
+            ),
+            path,
+        ))
     }
 
     fn stdin() -> Fallible<Self> {
+        Ok(Input::Stdin(io::stdin()))
+    }
+
+    pub fn to_buffer(&mut self) -> Fallible<&mut Cursor<String>> {
         let mut buf = String::new();
-        stdin().lock().read_to_string(&mut buf)?;
-        Ok(Input::Memory(Cursor::new(buf)))
+        match self {
+            Input::File(file, path) => file
+                .read_to_string(&mut buf)
+                .context(format!("Failed to read from file `{}`", path.display()))?,
+            Input::Stdin(stdin) => stdin
+                .lock()
+                .read_to_string(&mut buf)
+                .context("Failed to read from stdin")?,
+            Input::Buffer(cursor) => return Ok(cursor),
+        };
+
+        *self = Input::Buffer(Cursor::new(buf));
+        match self {
+            Input::Buffer(cursor) => Ok(cursor),
+            _ => unreachable!(),
+        }
     }
 }
 

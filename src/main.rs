@@ -54,16 +54,17 @@ fn run(opts: &Opts) -> Fallible<()> {
         };
     }
 
-    let input = input::read(&opts.input)?;
+    let mut input = input::read(&opts.input)?;
     if let Some(ptr) = &opts.pointer {
         match input {
-            Input::File(file) => ser::project(opts.ser, ptr, file, stdout()),
-            Input::Memory(cursor) => ser::project(opts.ser, ptr, cursor, stdout()),
+            Input::File(file, _) => ser::project(opts.ser, ptr, file, stdout()),
+            Input::Buffer(cursor) => ser::project(opts.ser, ptr, cursor, stdout()),
+            Input::Stdin(stdin) => ser::project(opts.ser, ptr, stdin.lock(), stdout()),
         }
     } else {
         match input {
-            Input::File(file) => ser::shorten(opts.ser, file, stdout()),
-            Input::Memory(cursor) => ser::shorten(opts.ser, cursor, stdout()),
+            Input::File(file, _) => ser::shorten(opts.ser, file, stdout()),
+            _ => ser::shorten(opts.ser, input.to_buffer()?, stdout()),
         }
     }
 }

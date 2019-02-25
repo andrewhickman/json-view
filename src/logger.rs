@@ -16,9 +16,19 @@ struct Logger {
 
 #[derive(Copy, Clone, Debug, StructOpt)]
 pub struct Opts {
-    #[structopt(long, help = "Enables debug logging", conflicts_with = "quiet", global = true)]
+    #[structopt(
+        long,
+        help = "Enables debug logging",
+        conflicts_with = "quiet",
+        global = true
+    )]
     debug: bool,
-    #[structopt(long, help = "Enables trace logging", conflicts_with = "quiet", global = true)]
+    #[structopt(
+        long,
+        help = "Enables trace logging",
+        conflicts_with = "quiet",
+        global = true
+    )]
     trace: bool,
     #[structopt(long, short, help = "Disable all logging to stderr", global = true)]
     quiet: bool,
