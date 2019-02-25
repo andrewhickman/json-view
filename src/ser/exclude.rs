@@ -37,7 +37,7 @@ impl Excluder {
         W: Write,
     {
         if let Some(length) = self.excludes.get(self.position) {
-            if self.writing() && length != 0 {
+            if self.writing() {
                 write!(writer, " {} items... ", length)?
             }
             self.depth += 1;
@@ -284,6 +284,7 @@ impl ExcludeSet {
     }
 
     pub fn insert(&mut self, range: Range<u32>, length: u32) {
+        debug_assert!(length != 0);
         self.indices.insert(range.start, length);
         self.indices.insert(range.end, 0);
 

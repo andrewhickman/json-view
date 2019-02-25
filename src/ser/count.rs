@@ -29,16 +29,18 @@ where
     if let Some(max_length) = opts.max_length {
         while counter.length > max_length {
             let max = counter.objects.pop().unwrap();
-            excludes.insert(max.range, max.length);
-            counter.length -= max.length;
+            if max.length != 0 {
+                excludes.insert(max.range, max.length - 1);
+                counter.length -= max.length;
+            }
         }
     }
 
     if let Some(max_depth) = opts.max_depth {
         while let Some(max) = counter.objects.pop() {
             debug_assert!(max.depth <= max_depth);
-            if max.depth == max_depth {
-                excludes.insert(max.range, max.length);
+            if max.depth == max_depth && max.length != 0 {
+                excludes.insert(max.range, max.length - 1);
                 counter.length -= max.length;
             }
         }
