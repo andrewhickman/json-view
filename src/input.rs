@@ -11,7 +11,7 @@ pub struct Opts {
     /// A path to the input file, or '-' to read from stdin
     #[structopt(
         name = "INPUT",
-        help = "Input file, or '-' to read from stdin",
+        help = "Input file to read from",
         conflicts_with = "data",
         parse(from_os_str)
     )]

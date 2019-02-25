@@ -37,7 +37,7 @@ impl Excluder {
         W: Write,
     {
         if let Some(length) = self.excludes.get(self.position) {
-            if self.writing() {
+            if self.writing() && length != 0 {
                 write!(writer, " {} items... ", length)?
             }
             self.depth += 1;
