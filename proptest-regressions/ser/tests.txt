@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 7c8083a11cbbdd2273523ac1365aa01bcf9426116e10d0e88b9ac9e3198c5665 # shrinks to value = Array([Null, Null, Array([Null, Null, Null, Null, Null, Null, Null, Null]), Null, Array([Null, Null, Null, Null, Null])]), opts = Opts { max_length: 21, max_depth: None }
+cc 672fd4eb14c1ae2e5aea7f5c3e58e855023d1fa235501b1f794bf044b09f3dbe # shrinks to value = Null, opts = Opts { max_length: Some(0), max_depth: None }

@@ -25,7 +25,7 @@ fn arb_json() -> impl Strategy<Value = json::Value> {
 
 prop_compose! {
     fn arb_opts()(
-        max_length in prop::option::of(0..1024u32),
+        max_length in prop::option::of(1..1024u32),
         max_depth in prop::option::of(0..16u32)
     ) -> Opts {
         Opts {

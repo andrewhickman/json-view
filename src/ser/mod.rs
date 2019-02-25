@@ -15,11 +15,19 @@ use structopt::StructOpt;
 #[structopt(rename_all = "kebab-case")]
 pub struct Opts {
     /// The maximum number of lines a json value can take up when printed.
-    #[structopt(long, short = "L")]
+    #[structopt(long, short = "L", raw(validator = "non_zero"))]
     max_length: Option<u32>,
     /// The maximum depth to which a json value should be printed.
     #[structopt(long, short = "D")]
     max_depth: Option<u32>,
+}
+
+fn non_zero(arg: String) -> Result<(), String> {
+    if let Ok(0) = arg.parse() {
+        Err("maximum length must be greater than 0".to_owned())
+    } else {
+        Ok(())
+    }
 }
 
 impl Opts {

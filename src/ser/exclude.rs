@@ -287,8 +287,6 @@ impl ExcludeSet {
         debug_assert!(length != 0);
         self.indices.insert(range.start, length);
         self.indices.insert(range.end, 0);
-
-        // TODO remove subranges
     }
 
     fn get(&self, index: u32) -> Option<u32> {
