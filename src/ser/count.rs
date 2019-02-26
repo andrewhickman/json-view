@@ -187,6 +187,7 @@ impl Ord for Object {
     fn cmp(&self, other: &Self) -> Ordering {
         self.depth
             .cmp(&other.depth)
-            .then(self.length.cmp(&other.length))
+            .then(self.length.cmp(&other.length)
+            .then(self.range.start.cmp(&other.range.start)))
     }
 }
