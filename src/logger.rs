@@ -64,12 +64,12 @@ impl Logger {
     fn write(&self, lvl: log::Level, msg: impl AsRef<str>) -> io::Result<()> {
         const PAD: usize = 8;
 
-        let color = match lvl {
-            log::Level::Trace => Color::White,
-            log::Level::Debug => Color::Cyan,
-            log::Level::Info => Color::Magenta,
-            log::Level::Warn => Color::Yellow,
-            log::Level::Error => Color::Red,
+        let (prefix, color) = match lvl {
+            log::Level::Trace => ("trace", Color::White),
+            log::Level::Debug => ("debug", Color::Cyan),
+            log::Level::Info => ("info", Color::Magenta),
+            log::Level::Warn => ("warning", Color::Yellow),
+            log::Level::Error => ("error", Color::Red),
         };
 
         let mut writer = self.writer.lock();
@@ -77,7 +77,7 @@ impl Logger {
 
         if let Some(first) = lines.next() {
             writer.set_color(ColorSpec::new().set_fg(Some(color)))?;
-            write!(writer, "{:>pad$}: ", lvl, pad = PAD)?;
+            write!(writer, "{:>pad$}: ", prefix, pad = PAD)?;
             writer.reset()?;
             writeln!(writer, "{}", first)?;
         }
