@@ -1,16 +1,15 @@
 mod input;
+mod io;
 mod logger;
 mod ser;
 
 use std::io::Write;
 
 use failure::{Error, Fallible};
-use grep_cli::{is_tty_stdout, StandardStream};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
-use termcolor::ColorChoice;
 
-use crate::input::Input;
+use crate::io::Input;
 
 /// json-view is a utility for viewing JSON files in the terminal.
 #[derive(Debug, StructOpt)]
@@ -56,32 +55,22 @@ fn run(opts: &Opts) -> Fallible<()> {
         };
     }
 
-    let mut stdout = stdout();
+    let mut stdout = io::stdout();
     let mut input = input::read(&opts.input)?;
     let result = if let Some(ptr) = &opts.pointer {
         match input {
-            Input::File(file, _) => ser::project(opts.ser, ptr, file, &mut stdout),
+            Input::File(file) => ser::project(opts.ser, ptr, file, &mut stdout),
             Input::Buffer(cursor) => ser::project(opts.ser, ptr, cursor, &mut stdout),
             Input::Stdin(stdin) => ser::project(opts.ser, ptr, stdin.lock(), &mut stdout),
         }
     } else {
         match input {
-            Input::File(file, _) => ser::shorten(opts.ser, file, &mut stdout),
+            Input::File(file) => ser::shorten(opts.ser, file, &mut stdout),
             _ => ser::shorten(opts.ser, input.to_buffer()?, &mut stdout),
         }
     };
     stdout.flush()?;
     result
-}
-
-fn stdout() -> StandardStream {
-    let color_choice = if is_tty_stdout() {
-        ColorChoice::Auto
-    } else {
-        ColorChoice::Never
-    };
-
-    grep_cli::stdout(color_choice)
 }
 
 fn fmt_error(err: &Error) -> String {

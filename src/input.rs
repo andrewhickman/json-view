@@ -1,12 +1,12 @@
-use std::fs::{self, File};
-use std::io::{self, stdin, BufReader, Cursor, Read, Stdin};
+use std::fs;
+use std::io::{self, Cursor};
 use std::path::{Path, PathBuf};
 
-use clipboard::{ClipboardContext, ClipboardProvider};
-use failure::{ensure, err_msg, format_err, Fallible, ResultExt};
+use failure::{ensure, format_err, Fallible, ResultExt};
 use grep_cli::is_readable_stdin;
 use structopt::StructOpt;
 
+use crate::io::{read_clipboard, stdin, Input};
 use crate::ser::identity;
 
 #[derive(Debug, StructOpt)]
@@ -63,12 +63,6 @@ pub struct Clean {
     dry_run: bool,
 }
 
-pub enum Input {
-    File(BufReader<File>, PathBuf),
-    Stdin(Stdin),
-    Buffer(Cursor<String>),
-}
-
 impl Start {
     pub fn run(&self, opts: &Opts) -> Fallible<()> {
         let dir = opts.data.dir()?;
@@ -103,7 +97,8 @@ impl Start {
         } else {
             log::debug!("Initializing data file from stdin.");
             identity(&mut stdin().lock(), &mut file)
-        }.context(format!("Failed to write to file `{}`", path.display()))?;
+        }
+        .context(format!("Failed to initialize file `{}`", path.display()))?;
 
         log::info!("Created data file `{}`.", path.display());
         Ok(())
@@ -150,46 +145,6 @@ pub fn read(opts: &Opts) -> Fallible<Input> {
     }
 }
 
-impl Input {
-    fn file(path: impl Into<PathBuf>) -> Fallible<Self> {
-        let path = path.into();
-        Ok(Input::File(
-            BufReader::new(
-                File::open(&path).context(format!("Failed to open file `{}`", path.display()))?,
-            ),
-            path,
-        ))
-    }
-
-    fn stdin() -> Fallible<Self> {
-        Ok(Input::Stdin(io::stdin()))
-    }
-
-    pub fn clipboard() -> Fallible<Self> {
-        Ok(Input::Buffer(Cursor::new(read_clipboard()?)))
-    }
-
-    pub fn to_buffer(&mut self) -> Fallible<&mut Cursor<String>> {
-        let mut buf = String::new();
-        match self {
-            Input::File(file, path) => file
-                .read_to_string(&mut buf)
-                .context(format!("Failed to read from file `{}`", path.display()))?,
-            Input::Stdin(stdin) => stdin
-                .lock()
-                .read_to_string(&mut buf)
-                .context("Failed to read from stdin")?,
-            Input::Buffer(cursor) => return Ok(cursor),
-        };
-
-        *self = Input::Buffer(Cursor::new(buf));
-        match self {
-            Input::Buffer(cursor) => Ok(cursor),
-            _ => unreachable!(),
-        }
-    }
-}
-
 impl DataOpts {
     fn file(&self, dir: PathBuf) -> PathBuf {
         dir.join::<&Path>(match &self.file {
@@ -210,14 +165,4 @@ impl DataOpts {
             ))
         }
     }
-}
-
-fn read_clipboard() -> Fallible<String> {
-    let mut clip =
-        wrap_err(ClipboardContext::new()).context("Failed to initialize clipboard")?;
-    Ok(wrap_err(clip.get_contents()).context("Failed to read from clipboard")?)
-}
-
-fn wrap_err<T>(res: Result<T, Box<dyn std::error::Error>>) -> Fallible<T> {
-    res.map_err(|e| err_msg(e.to_string()))
 }

@@ -5,7 +5,7 @@ mod tests;
 
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use failure::{Fallible, ResultExt, Fail, Error};
+use failure::{Error, Fail, Fallible};
 use json::de::Deserializer;
 use serde::ser::{Serialize, Serializer};
 use serde_transcode::transcode;
@@ -41,14 +41,14 @@ where
     R: Read,
     W: Write,
 {
-    let value: json::Value = json::from_reader(rdr).context("Failed to read JSON from input")?;
+    let value: json::Value = json::from_reader(rdr).map_err(wrap_json_err)?;
     if let Some(proj) = value.pointer(ptr) {
         if opts.is_identity() {
-            Ok(json::to_writer_pretty(wtr, proj)?)
+            Ok(json::to_writer_pretty(wtr, proj).map_err(wrap_json_err)?)
         } else {
-            let excludes = count::count(opts, |ser| Ok(proj.serialize(ser)?))?;
+            let excludes = count::count(opts, |ser| proj.serialize(ser).map_err(wrap_json_err))?;
             exclude::write(excludes, wtr, |ser| {
-                Ok(proj.serialize(ser).context("Failed to write output")?)
+                proj.serialize(ser).map_err(wrap_json_err)
             })
         }
     } else {
@@ -65,13 +65,9 @@ where
     if opts.is_identity() {
         identity(rdr, wtr)
     } else {
-        let excludes = count::count(opts, |ser| {
-            Ok(serialize(rdr.by_ref(), ser).context("Failed to read JSON from input")?)
-        })?;
+        let excludes = count::count(opts, |ser| serialize(rdr.by_ref(), ser))?;
         rdr.seek(SeekFrom::Start(0))?;
-        exclude::write(excludes, wtr, |ser| {
-            Ok(serialize(rdr, ser).context("Failed to write output")?)
-        })
+        exclude::write(excludes, wtr, |ser| serialize(rdr, ser))
     }
 }
 
@@ -89,9 +85,13 @@ where
     S: Serializer<Ok = (), Error = json::Error>,
 {
     let mut de = Deserializer::from_reader(rdr);
-    transcode(&mut de, ser).map_err(|e| if e.is_io() {
+    transcode(&mut de, ser).map_err(wrap_json_err)
+}
+
+fn wrap_json_err(e: json::Error) -> Error {
+    if e.is_io() {
         Error::from(e)
     } else {
-        Error::from(e.context("Invalid JSON"))
-    })
+        Error::from(e.context("Invalid JSON in input"))
+    }
 }
