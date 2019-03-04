@@ -69,8 +69,8 @@ fn run(opts: &Opts) -> Fallible<()> {
             _ => ser::shorten(opts.ser, input.to_buffer()?, &mut stdout),
         }
     };
-    stdout.flush()?;
-    result
+
+    result.and(stdout.flush().map_err(Into::into))
 }
 
 fn fmt_error(err: &Error) -> String {

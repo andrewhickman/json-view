@@ -89,9 +89,6 @@ where
 }
 
 fn wrap_json_err(e: json::Error) -> Error {
-    if e.is_io() {
-        Error::from(e)
-    } else {
-        Error::from(e.context("Invalid JSON in input"))
-    }
+    // TODO: preserve error through transcode and add context
+    e.into()
 }
