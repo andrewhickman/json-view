@@ -14,10 +14,10 @@ use structopt::StructOpt;
 #[derive(Copy, Clone, Debug, StructOpt)]
 #[structopt(rename_all = "kebab-case")]
 pub struct Opts {
-    /// The maximum number of lines a json value can take up when printed.
+    /// The maximum number of lines a JSON value can take up when printed.
     #[structopt(long, short = "L", raw(validator = "non_zero"))]
     max_length: Option<u32>,
-    /// The maximum depth to which a json value should be printed.
+    /// The maximum depth to which a JSON value should be printed.
     #[structopt(long, short = "D")]
     max_depth: Option<u32>,
 }
@@ -41,7 +41,7 @@ where
     R: Read,
     W: Write,
 {
-    let value: json::Value = json::from_reader(rdr).context("Failed to read json from input")?;
+    let value: json::Value = json::from_reader(rdr).context("Failed to read JSON from input")?;
     if let Some(proj) = value.pointer(ptr) {
         if opts.is_identity() {
             Ok(json::to_writer_pretty(wtr, proj)?)
@@ -52,7 +52,7 @@ where
             })
         }
     } else {
-        log::warn!("No value found for json pointer `{}`.", ptr);
+        log::warn!("No value found for JSON pointer `{}`.", ptr);
         Ok(())
     }
 }
@@ -66,7 +66,7 @@ where
         identity(rdr, wtr)
     } else {
         let excludes = count::count(opts, |ser| {
-            Ok(serialize(rdr.by_ref(), ser).context("Failed to read json from input")?)
+            Ok(serialize(rdr.by_ref(), ser).context("Failed to read JSON from input")?)
         })?;
         rdr.seek(SeekFrom::Start(0))?;
         exclude::write(excludes, wtr, |ser| {
@@ -75,7 +75,7 @@ where
     }
 }
 
-pub fn identity<R, W>(rdr: R, wtr: W) -> Fallible<()> 
+pub fn identity<R, W>(rdr: R, wtr: W) -> Fallible<()>
 where
     R: Read,
     W: Write,

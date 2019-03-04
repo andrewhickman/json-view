@@ -12,7 +12,7 @@ use termcolor::ColorChoice;
 
 use crate::input::Input;
 
-/// json-view is a utility for viewing json files in the terminal.
+/// json-view is a utility for viewing JSON files in the terminal.
 #[derive(Debug, StructOpt)]
 #[structopt(raw(global_setting = "AppSettings::UnifiedHelpMessage"))]
 #[structopt(raw(global_setting = "AppSettings::VersionlessSubcommands"))]
