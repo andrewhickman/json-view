@@ -5,7 +5,7 @@ mod tests;
 
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use failure::{Fallible, ResultExt};
+use failure::{Fallible, ResultExt, Fail, Error};
 use json::de::Deserializer;
 use serde::ser::{Serialize, Serializer};
 use serde_transcode::transcode;
@@ -86,10 +86,12 @@ where
 fn serialize<R, S>(rdr: R, ser: S) -> Fallible<()>
 where
     R: Read,
-    S: Serializer,
-    S::Error: Send + Sync + 'static,
+    S: Serializer<Ok = (), Error = json::Error>,
 {
     let mut de = Deserializer::from_reader(rdr);
-    transcode(&mut de, ser)?;
-    Ok(())
+    transcode(&mut de, ser).map_err(|e| if e.is_io() {
+        Error::from(e)
+    } else {
+        Error::from(e.context("Invalid JSON"))
+    })
 }
