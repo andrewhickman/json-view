@@ -63,7 +63,7 @@ where
     W: Write,
 {
     if opts.is_identity() {
-        serialize(rdr, &mut json::Serializer::pretty(wtr))
+        identity(rdr, wtr)
     } else {
         let excludes = count::count(opts, |ser| {
             Ok(serialize(rdr.by_ref(), ser).context("Failed to read json from input")?)
@@ -73,6 +73,14 @@ where
             Ok(serialize(rdr, ser).context("Failed to write output")?)
         })
     }
+}
+
+pub fn identity<R, W>(rdr: R, wtr: W) -> Fallible<()> 
+where
+    R: Read,
+    W: Write,
+{
+    serialize(rdr, &mut json::Serializer::pretty(wtr))
 }
 
 fn serialize<R, S>(rdr: R, ser: S) -> Fallible<()>
