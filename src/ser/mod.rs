@@ -5,7 +5,7 @@ mod tests;
 
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use failure::{Error, Fail, Fallible};
+use failure::{Error, Fallible};
 use json::de::Deserializer;
 use serde::ser::{Serialize, Serializer};
 use serde_transcode::transcode;
